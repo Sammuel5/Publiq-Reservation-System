@@ -1,0 +1,60 @@
+import { NextResponse, type NextRequest } from "next/server";
+import { createReservationSchema } from "@/lib/validation/reservation";
+import { createReservation } from "@/lib/services/reservations";
+import { getClubSettings } from "@/lib/services/club-settings";
+import { enforceRateLimit } from "@/lib/rate-limit";
+import { getMaskedClientIp, isSameOriginRequest, rateLimitSubject } from "@/lib/http";
+import { ForbiddenError, ValidationError, toErrorResponse } from "@/lib/errors";
+import { normalizeMobileNumber } from "@/lib/utils/normalize";
+
+/**
+ * POST /api/reservations — public booking endpoint.
+ *
+ * Server-side protections (the browser is never trusted):
+ *  - same-origin check
+ *  - Zod validation of every field
+ *  - rate limits per IP and per mobile number
+ *  - availability re-verified against the database
+ *  - price calculated from the room's current rate
+ *  - duplicate submissions are idempotent (submissionKey)
+ *  - new reservations always start as PENDING
+ */
+export async function POST(request: NextRequest) {
+  try {
+    if (!isSameOriginRequest(request)) {
+      throw new ForbiddenError("Cross-origin requests are not allowed.");
+    }
+
+    const raw = await request.json().catch(() => {
+      throw new ValidationError("Expected a JSON request body.");
+    });
+    const input = createReservationSchema.parse(raw);
+
+    const subject = rateLimitSubject(request.headers);
+    await enforceRateLimit({ key: `reserve:ip:${subject}`, limit: 8, windowMs: 60 * 60_000 });
+
+    const mobile = normalizeMobileNumber(input.mobileNumber);
+    if (mobile) {
+      await enforceRateLimit({ key: `reserve:mobile:${mobile}`, limit: 5, windowMs: 60 * 60_000 });
+    }
+
+    const settings = await getClubSettings();
+    const result = await createReservation({
+      input,
+      settings,
+      ipHint: getMaskedClientIp(request.headers),
+    });
+
+    return NextResponse.json(
+      {
+        reservation: result.reservation,
+        accessToken: result.accessToken,
+        duplicate: result.duplicate,
+        policy: result.policy,
+      },
+      { status: result.duplicate ? 200 : 201, headers: { "Cache-Control": "no-store" } },
+    );
+  } catch (error) {
+    return toErrorResponse(error, "api.reservations.create");
+  }
+}

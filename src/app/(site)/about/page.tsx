@@ -1,0 +1,4 @@
+import Link from "next/link";
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "About PUBLIQ" };
+export default function AboutPage() { return <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-gold">About PUBLIQ</p><h1 className="mt-3 max-w-3xl font-display text-4xl sm:text-5xl">Your people. Your kind of night.</h1><p className="mt-5 max-w-2xl leading-relaxed text-muted">PUBLIQ brings people together for a night out, with VIP booths and couch seating for your group. We’re open from 9:00 p.m. to 4:00 a.m.</p>{/* eslint-disable-next-line @next/next/no-img-element */}<img src="/images/publiq-venue/venue-6.jpeg" alt="Inside PUBLIQ" className="mt-8 max-h-[480px] w-full rounded-xl object-cover" /><Link href="/spaces" className="mt-8 inline-flex min-h-11 items-center text-sm font-semibold text-gold">Explore seating →</Link></div>; }

@@ -1,0 +1,375 @@
+import Link from "next/link";
+import {
+  ArrowRight,
+  CalendarCheck,
+  Clock,
+  CreditCard,
+  MapPin,
+  Music4,
+  Phone,
+  ShieldCheck,
+  Sparkles,
+  Users,
+} from "lucide-react";
+import { getClubSettings } from "@/lib/services/club-settings";
+import { listBookableRooms } from "@/lib/services/availability";
+import { RoomCard, categoryLabel } from "@/components/site/room-card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { formatOperatingDays, DAY_LABELS } from "@/lib/utils/opening-hours";
+import { formatMoney } from "@/lib/utils/money";
+
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const [settings, rooms] = await Promise.all([getClubSettings(), listBookableRooms()]);
+  const featured = rooms.slice(0, 3);
+
+  const categories = Array.from(new Set(rooms.map((room) => room.categorySlug))).map(
+    (slug) => ({
+      slug,
+      label: categoryLabel(slug),
+      count: rooms.filter((room) => room.categorySlug === slug).length,
+      from: Math.min(
+        ...rooms.filter((room) => room.categorySlug === slug).map((room) => room.hourlyRate),
+      ),
+    }),
+  );
+
+  return (
+    <>
+      {/* ------------------------------------------------------------ hero --- */}
+      <section className="relative isolate overflow-hidden">
+        <div className="absolute inset-0 -z-10">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/images/hero-lounge.jpg"
+            alt=""
+            className="size-full object-cover object-center"
+            fetchPriority="high"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/85 via-background/70 to-background" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/50 to-transparent" />
+        </div>
+
+        <div className="mx-auto flex w-full max-w-7xl flex-col justify-center px-5 pb-16 pt-16 sm:px-8 sm:pb-24 sm:pt-24 lg:min-h-[86vh] lg:pb-28 lg:pt-28">
+          <div className="max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="gold">
+                <Sparkles className="size-3" />
+                {settings.clubName}
+              </Badge>
+              <span className="text-[11.5px] uppercase tracking-[0.16em] text-faint">
+                {formatOperatingDays(settings.operatingDays, DAY_LABELS)} ·{" "}
+                {settings.openingTime}–{settings.closingTime}
+              </span>
+            </div>
+
+            <h1 className="mt-6 font-display text-[2.6rem] leading-[1.05] tracking-tight sm:text-6xl lg:text-[4.25rem]">
+              Your room.
+              <br />
+              <span className="text-gold-gradient">Your night.</span>
+            </h1>
+
+            <p className="mt-5 max-w-xl text-[15px] leading-relaxed text-muted sm:text-base">
+              {settings.tagline ??
+                "Private KTV rooms and entertainment suites in the heart of the city."}{" "}
+              Check live availability, hold your room in under two minutes, and settle
+              the bill when you arrive.
+            </p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button asChild size="lg">
+                <Link href="/reserve">
+                  <CalendarCheck className="size-4" />
+                  Reserve now
+                </Link>
+              </Button>
+              <Button asChild variant="secondary" size="lg">
+                <Link href="/rooms">
+                  Explore rooms
+                  <ArrowRight className="size-4" />
+                </Link>
+              </Button>
+            </div>
+
+            <dl className="mt-10 grid max-w-md grid-cols-3 gap-4 border-t border-line/80 pt-6">
+              <div>
+                <dt className="text-[10.5px] uppercase tracking-[0.12em] text-faint">Rooms</dt>
+                <dd className="mt-1 text-lg font-semibold">{rooms.length || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-[10.5px] uppercase tracking-[0.12em] text-faint">Tiers</dt>
+                <dd className="mt-1 text-lg font-semibold">{categories.length || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-[10.5px] uppercase tracking-[0.12em] text-faint">Payment</dt>
+                <dd className="mt-1 text-[13px] font-semibold leading-tight">
+                  At the club
+                </dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------------- essentials --- */}
+      <section className="border-y border-line bg-surface/60">
+        <div className="mx-auto grid w-full max-w-7xl gap-6 px-5 py-10 sm:grid-cols-3 sm:px-8 sm:py-12">
+          <Feature
+            icon={ShieldCheck}
+            title="Live availability"
+            body="Every room is checked against real bookings the moment you submit — no double bookings."
+          />
+          <Feature
+            icon={CreditCard}
+            title="No online payment"
+            body="Reserve first, pay at the club. Nothing is charged to your card online."
+          />
+          <Feature
+            icon={Music4}
+            title="Curated rooms"
+            body="From intimate standard rooms to full premium VIP suites with private service."
+          />
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------------- rooms --- */}
+      <section className="mx-auto w-full max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold">
+              The rooms
+            </p>
+            <h2 className="mt-2 font-display text-3xl tracking-tight sm:text-4xl">
+              Choose your stage
+            </h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">
+              Four tiers, one standard of service. Each room is soundproofed, fully
+              serviced and bookable by the hour.
+            </p>
+          </div>
+          <Link
+            href="/rooms"
+            className="inline-flex min-h-9 items-center gap-1.5 text-[13px] font-medium text-gold underline-offset-4 hover:underline"
+          >
+            All rooms &amp; rates
+            <ArrowRight aria-hidden className="size-3.5" />
+          </Link>
+        </div>
+
+        {featured.length === 0 ? (
+          <EmptyState
+            className="mt-8"
+            icon={Music4}
+            title="Rooms are being prepared"
+            description="Our team is finishing the room setup. Please check back shortly or call us to book."
+            action={
+              <Button asChild variant="secondary">
+                <a href={`tel:${settings.contactNumber.replace(/[^\d+]/g, "")}`}>
+                  <Phone className="size-4" />
+                  Call the club
+                </a>
+              </Button>
+            }
+          />
+        ) : (
+          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {featured.map((room) => (
+              <RoomCard key={room.id} room={room} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ----------------------------------------------------- categories --- */}
+      {categories.length > 0 ? (
+        <section className="border-y border-line bg-surface/40">
+          <div className="mx-auto w-full max-w-7xl px-5 py-14 sm:px-8 sm:py-16">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {categories.map((category) => (
+                <Link
+                  key={category.slug}
+                  href={`/rooms?category=${category.slug}`}
+                  className="group rounded-lg border border-line bg-card p-5 transition-colors hover:border-gold/40"
+                >
+                  <p className="text-[11px] uppercase tracking-[0.12em] text-faint">
+                    {category.count} room{category.count === 1 ? "" : "s"}
+                  </p>
+                  <h3 className="mt-2 text-[15px] font-semibold tracking-tight group-hover:text-gold">
+                    {category.label}
+                  </h3>
+                  <p className="mt-1 text-[12.5px] text-muted">
+                    From {formatMoney(category.from)} / hour
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
+      {/* ---------------------------------------------------- how it works --- */}
+      <section className="mx-auto w-full max-w-7xl px-5 py-16 sm:px-8 sm:py-20">
+        <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold">
+              How it works
+            </p>
+            <h2 className="mt-2 font-display text-3xl tracking-tight sm:text-4xl">
+              Booked in three steps
+            </h2>
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-muted">
+              We hold your room as soon as you submit. Our team confirms by phone or text
+              — usually within the hour, always before you arrive.
+            </p>
+            <Button asChild className="mt-6" variant="outline">
+              <Link href="/reserve">
+                Start a reservation
+                <ArrowRight className="size-4" />
+              </Link>
+            </Button>
+          </div>
+
+          <ol className="space-y-4">
+            {[
+              {
+                step: "01",
+                title: "Pick a date and time",
+                body: "Live slots every 30 minutes, inside operating hours. Nothing in the past.",
+              },
+              {
+                step: "02",
+                title: "Choose your room",
+                body: "We only show rooms that genuinely fit your group and are free for your slot.",
+              },
+              {
+                step: "03",
+                title: "Confirm and arrive",
+                body: "Get a reference number instantly. Pay at the club when you check in.",
+              },
+            ].map((item) => (
+              <li
+                key={item.step}
+                className="flex gap-4 rounded-lg border border-line bg-card p-5"
+              >
+                <span className="font-display text-2xl leading-none text-gold/60">
+                  {item.step}
+                </span>
+                <div>
+                  <h3 className="text-[14.5px] font-semibold tracking-tight">{item.title}</h3>
+                  <p className="mt-1 text-[13px] leading-relaxed text-muted">{item.body}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* ------------------------------------------------- hours & contact --- */}
+      <section className="border-t border-line bg-surface/60">
+        <div className="mx-auto grid w-full max-w-7xl gap-8 px-5 py-14 sm:px-8 lg:grid-cols-2 lg:py-16">
+          <div className="rounded-lg border border-line bg-card p-6">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.1em] text-faint">
+              <Clock aria-hidden className="size-4 text-gold" />
+              Operating hours
+            </h2>
+            <p className="mt-4 font-display text-3xl tracking-tight">
+              {settings.openingTime} – {settings.closingTime}
+            </p>
+            <p className="mt-1 text-[13.5px] text-muted">
+              {formatOperatingDays(settings.operatingDays, DAY_LABELS)} · times are club-local (
+              {settings.timezone})
+            </p>
+            <p className="mt-4 text-[13px] leading-relaxed text-muted">
+              Last booking starts 30 minutes before closing. Same-day reservations are
+              welcome, subject to availability.
+            </p>
+          </div>
+
+          <div className="rounded-lg border border-line bg-card p-6">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.1em] text-faint">
+              <MapPin aria-hidden className="size-4 text-gold" />
+              Find us
+            </h2>
+            <p className="mt-4 text-[15px] leading-relaxed text-foreground">
+              {settings.address}
+            </p>
+            <div className="mt-4 space-y-2 text-[13.5px] text-muted">
+              <p>
+                <a
+                  href={`tel:${settings.contactNumber.replace(/[^\d+]/g, "")}`}
+                  className="inline-flex min-h-9 items-center gap-2 transition-colors hover:text-foreground"
+                >
+                  <Phone aria-hidden className="size-3.5 text-gold/70" />
+                  {settings.contactNumber}
+                </a>
+              </p>
+              <p>
+                <a
+                  href={`mailto:${settings.email}`}
+                  className="inline-flex min-h-9 items-center break-all transition-colors hover:text-foreground"
+                >
+                  {settings.email}
+                </a>
+              </p>
+            </div>
+            <Button asChild variant="secondary" size="sm" className="mt-5">
+              <Link href="/contact">
+                Contact &amp; directions
+                <ArrowRight className="size-3.5" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* --------------------------------------------------------- final CTA --- */}
+      <section className="relative isolate overflow-hidden border-t border-line">
+        <div aria-hidden className="absolute inset-0 -z-10">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/room-premium.jpg" alt="" className="size-full object-cover" />
+          <div className="absolute inset-0 bg-background/85" />
+        </div>
+        <div className="mx-auto flex w-full max-w-4xl flex-col items-center px-5 py-16 text-center sm:px-8 sm:py-20">
+          <Users aria-hidden className="size-6 text-gold" />
+          <h2 className="mt-4 font-display text-3xl leading-tight tracking-tight sm:text-4xl">
+            Bring the group. We&apos;ll bring the room.
+          </h2>
+          <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted">
+            Reserve in minutes, keep your reference number, and pay when you arrive.
+          </p>
+          <Button asChild size="lg" className="mt-7">
+            <Link href="/reserve">
+              <CalendarCheck className="size-4" />
+              Reserve a room
+            </Link>
+          </Button>
+        </div>
+      </section>
+    </>
+  );
+}
+
+function Feature({
+  icon: Icon,
+  title,
+  body,
+}: {
+  icon: React.ElementType;
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="flex gap-3.5">
+      <span className="grid size-10 shrink-0 place-items-center rounded-md border border-gold/30 bg-gold/10">
+        <Icon aria-hidden className="size-4 text-gold" />
+      </span>
+      <div>
+        <h3 className="text-[13.5px] font-semibold tracking-tight">{title}</h3>
+        <p className="mt-1 text-[12.5px] leading-relaxed text-muted">{body}</p>
+      </div>
+    </div>
+  );
+}

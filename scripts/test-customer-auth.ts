@@ -1,0 +1,15 @@
+import assert from "node:assert/strict";
+import { seal, unseal, equalTokens, validSeat } from "../src/lib/customer-auth/crypto";
+const secret="unit-test-secret-which-is-at-least-32-characters";
+const input={sub:"google-id",exp:Date.now()+10000,seat:"VIP 2"};
+const value=seal(input,secret);
+assert.deepEqual(unseal(value,secret),input);
+const bytes=Buffer.from(value,"base64url"); bytes[bytes.length-1]!^=1;
+assert.equal(unseal(bytes.toString("base64url"),secret),null);
+assert.equal(unseal(value,"a-completely-different-secret-over-32-characters"),null);
+assert.equal(unseal(value,"short"),null);
+assert.throws(()=>seal(input,"short"));
+assert.equal(equalTokens("state", "state"),true);assert.equal(equalTokens("state", "stAte"),false);assert.equal(equalTokens("abc", "a"),false);
+for(const seat of ["VIP 1","VIP 7","Couch 2","Couch 6"]) assert.ok(validSeat(seat));
+for(const seat of ["VIP 8","Couch 7","//evil.example","VIP 1<script>"]) assert.equal(validSeat(seat),false);
+console.log('Customer cookie encryption, tampering, state comparison and seat validation: passed');

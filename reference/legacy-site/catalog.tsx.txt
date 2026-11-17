@@ -1,0 +1,140 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { Music4 } from "lucide-react";
+import { getClubSettings } from "@/lib/services/club-settings";
+import { listBookableRooms } from "@/lib/services/availability";
+import { RoomCard, categoryLabel } from "@/components/site/room-card";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils/cn";
+
+export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Rooms & rates",
+  description:
+    "Browse Standard, VIP, Premium VIP and Private Area rooms — capacity, hourly rates and amenities.",
+};
+
+export default async function RoomsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
+  const [{ category }, rooms, settings] = await Promise.all([
+    searchParams,
+    listBookableRooms(),
+    getClubSettings(),
+  ]);
+
+  const categories = Array.from(new Set(rooms.map((room) => room.categorySlug)));
+  const activeCategory = category && categories.includes(category) ? category : null;
+  const visible = activeCategory
+    ? rooms.filter((room) => room.categorySlug === activeCategory)
+    : rooms;
+
+  return (
+    <div className="mx-auto w-full max-w-7xl px-5 py-12 sm:px-8 sm:py-16">
+      <header className="max-w-2xl">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold">
+          {settings.clubName}
+        </p>
+        <h1 className="mt-2 font-display text-3xl leading-tight tracking-tight sm:text-5xl">
+          Rooms &amp; rates
+        </h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-muted">
+          Every room is private, soundproofed and serviced. Rates are per hour; the
+          minimum booking is shown on each room. Payment is settled at the club.
+        </p>
+      </header>
+
+      {categories.length > 1 ? (
+        <nav aria-label="Filter by room category" className="mt-8 flex flex-wrap gap-2">
+          <FilterChip href="/rooms" active={activeCategory === null} label={`All (${rooms.length})`} />
+          {categories.map((slug) => (
+            <FilterChip
+              key={slug}
+              href={`/rooms?category=${slug}`}
+              active={activeCategory === slug}
+              label={`${categoryLabel(slug)} (${rooms.filter((room) => room.categorySlug === slug).length})`}
+            />
+          ))}
+        </nav>
+      ) : null}
+
+      {visible.length === 0 ? (
+        <EmptyState
+          className="mt-10"
+          icon={Music4}
+          title="No rooms available right now"
+          description="Our rooms are currently unavailable for online booking. Please call the club and we'll sort something out."
+          action={
+            <Button asChild>
+              <a href={`tel:${settings.contactNumber.replace(/[^\d+]/g, "")}`}>
+                Call {settings.contactNumber}
+              </a>
+            </Button>
+          }
+        />
+      ) : (
+        <>
+          <p className="mt-8 text-[12.5px] text-faint">
+            Showing {visible.length} room{visible.length === 1 ? "" : "s"}
+            {activeCategory ? ` in ${categoryLabel(activeCategory)}` : ""}
+          </p>
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {visible.map((room) => (
+              <RoomCard key={room.id} room={room} />
+            ))}
+          </div>
+        </>
+      )}
+
+      <section className="mt-14 rounded-lg border border-line bg-card p-6 sm:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Not sure which room?</h2>
+            <p className="mt-1 max-w-xl text-[13.5px] leading-relaxed text-muted">
+              Tell us your group size and we&apos;ll match you to the right space. Reservations
+              are confirmed by our team — usually within the hour.
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Button asChild>
+              <Link href="/reserve">Reserve now</Link>
+            </Button>
+            <Button asChild variant="secondary">
+              <Link href="/contact">Contact us</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function FilterChip({
+  href,
+  label,
+  active,
+}: {
+  href: string;
+  label: string;
+  active: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "rounded-full border px-3.5 py-2 text-[12.5px] font-medium transition-colors",
+        active
+          ? "border-gold/50 bg-gold/10 text-gold"
+          : "border-line text-muted hover:border-line-strong hover:text-foreground",
+      )}
+    >
+      {label}
+    </Link>
+  );
+}
+

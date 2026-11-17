@@ -1,0 +1,66 @@
+import type { Metadata } from "next";
+import { getClubSettings } from "@/lib/services/club-settings";
+import {
+  maxBookingDate,
+  todayInClubTime,
+} from "@/lib/services/availability";
+import { BookingWizard } from "@/components/site/booking-wizard";
+
+export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Reserve a room",
+  description:
+    "Check live availability and hold a private KTV room in minutes. No account needed — pay at the club.",
+};
+
+export default async function ReservePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ room?: string; date?: string; time?: string }>;
+}) {
+  const [params, settings] = await Promise.all([searchParams, getClubSettings()]);
+
+  const today = todayInClubTime(settings);
+  const maxDate = maxBookingDate(settings);
+
+  return (
+    <div className="mx-auto w-full max-w-7xl px-5 py-10 sm:px-8 sm:py-14">
+      <header className="max-w-2xl">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold">
+          {settings.clubName}
+        </p>
+        <h1 className="mt-2 font-display text-3xl leading-tight tracking-tight sm:text-5xl">
+          Reserve your room
+        </h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-muted">
+          Four quick steps and your room is held. You pay at the club — nothing is
+          charged online.
+        </p>
+      </header>
+
+      <div className="mt-8">
+        <BookingWizard
+          settings={{
+            clubName: settings.clubName,
+            openingTime: settings.openingTime,
+            closingTime: settings.closingTime,
+            timezone: settings.timezone,
+            minimumDuration: settings.minimumDuration,
+            defaultDuration: settings.defaultDuration,
+            cancellationPolicy: settings.cancellationPolicy,
+            cancellationCutoffHours: settings.cancellationCutoffHours,
+            contactNumber: settings.contactNumber,
+          }}
+          initial={{
+            room: params.room,
+            date: params.date,
+            time: params.time,
+          }}
+          today={today}
+          maxDate={maxDate}
+        />
+      </div>
+    </div>
+  );
+}

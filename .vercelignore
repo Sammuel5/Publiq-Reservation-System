@@ -1,0 +1,12 @@
+# Never upload local or pulled environment files, test outputs or sandbox data.
+.env*
+.vercel/
+.cache/
+.next/
+node_modules/
+screenshots/
+run-*.txt
+phase3-*.txt
+phase3-api.txt
+probe3.mjs
+*.tsbuildinfo

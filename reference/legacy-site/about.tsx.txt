@@ -1,0 +1,102 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowRight, Clock, HeartHandshake, Music4, ShieldCheck, Sparkles } from "lucide-react";
+import { getClubSettings } from "@/lib/services/club-settings";
+import { Button } from "@/components/ui/button";
+import { DAY_LABELS, formatOperatingDays } from "@/lib/utils/opening-hours";
+
+export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "About the club",
+  description:
+    "A private-room KTV lounge built for celebrations, team nights and quiet evenings — with real service and no online payment.",
+};
+
+export default async function AboutPage() {
+  const settings = await getClubSettings();
+
+  return (
+    <div className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8 sm:py-14">
+      <header className="max-w-3xl">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold">
+          About
+        </p>
+        <h1 className="mt-2 font-display text-3xl leading-tight tracking-tight sm:text-5xl">
+          A room built around your night
+        </h1>
+        <p className="mt-4 text-[15px] leading-relaxed text-muted">
+          {settings.clubName} is a private-room KTV lounge: no shared floors, no queues at
+          a bar, just your group, your music and a team that looks after the details. Every
+          room is soundproofed and serviced, from intimate standard rooms to full premium
+          VIP suites.
+        </p>
+      </header>
+
+      <div className="mt-8 overflow-hidden rounded-lg border border-line">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/room-vip.jpg"
+          alt="A VIP room at the club"
+          className="h-56 w-full object-cover sm:h-80"
+          loading="lazy"
+        />
+      </div>
+
+      <section className="mt-10 grid gap-4 sm:grid-cols-2">
+        {[
+          {
+            icon: Music4,
+            title: "Rooms, not tables",
+            body: "Each booking is a private room for your group only — capacity, rates and minimum stay are shown up front.",
+          },
+          {
+            icon: ShieldCheck,
+            title: "Real availability",
+            body: "Our system checks the room against live bookings as you submit, so two groups can never hold the same slot.",
+          },
+          {
+            icon: HeartHandshake,
+            title: "Service first",
+            body: "A host confirms every reservation by call or text, and our floor team looks after you from arrival to last song.",
+          },
+          {
+            icon: Sparkles,
+            title: "No online payment",
+            body: "Reserve online, settle at the counter. No card details, no deposits, no surprises.",
+          },
+        ].map((item) => (
+          <div key={item.title} className="rounded-lg border border-line bg-card p-5">
+            <item.icon aria-hidden className="size-5 text-gold" />
+            <h2 className="mt-3 text-[14.5px] font-semibold tracking-tight">{item.title}</h2>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{item.body}</p>
+          </div>
+        ))}
+      </section>
+
+      <section className="mt-10 rounded-lg border border-line bg-surface/60 p-6">
+        <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.1em] text-faint">
+          <Clock aria-hidden className="size-4 text-gold" />
+          Opening hours
+        </h2>
+        <p className="mt-3 text-[15px]">
+          {formatOperatingDays(settings.operatingDays, DAY_LABELS)} ·{" "}
+          {settings.openingTime} – {settings.closingTime}
+        </p>
+        <p className="mt-1 text-[12.5px] text-muted">All times are {settings.timezone}.</p>
+      </section>
+
+      <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+        <Button asChild size="lg">
+          <Link href="/reserve">
+            Reserve a room
+            <ArrowRight className="size-4" />
+          </Link>
+        </Button>
+        <Button asChild variant="secondary" size="lg">
+          <Link href="/rooms">See rooms &amp; rates</Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
