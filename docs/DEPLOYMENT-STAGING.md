@@ -1,3 +1,5 @@
+> **Status:** This guide includes older reservation-system material. The [documentation index](README.md) and [current project status](../README.md#current-status) take precedence. Do not accept real bookings until the launch blockers are resolved.
+
 # Staging deployment runbook
 
 **Status: preparation only.** No hosting account, Atlas cluster, domain, email/SMS

@@ -32,7 +32,6 @@ yarn-error.log*
 
 # env files — real values never enter version control
 .env*
-.env.local
 !.env.example
 
 # vercel
@@ -48,3 +47,12 @@ phase3-*.txt
 phase3-api.txt
 probe3.mjs
 screenshots/
+
+# Local source archives, uploads, and private test or design artifacts
+/zzz-PUBLIQ-Source.zip
+/uploads/
+/Unselected files/
+/test-run-logs/
+/role-build.log
+/skills-frontend-output.txt
+/publiq-homepage-concept.png

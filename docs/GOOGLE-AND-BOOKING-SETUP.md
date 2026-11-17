@@ -1,3 +1,5 @@
+> **Status:** This guide includes older reservation-system material. The [documentation index](README.md) and [current project status](../README.md#current-status) take precedence. Do not accept real bookings until the launch blockers are resolved.
+
 # PUBLIQ: Google sign-in and booking setup
 
 This guide is for the owner setting up PUBLIQ on their own computer and later in

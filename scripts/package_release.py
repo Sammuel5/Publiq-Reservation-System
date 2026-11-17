@@ -7,11 +7,11 @@ root = Path(__file__).resolve().parent.parent
 output = root / "zzz-PUBLIQ-Source.zip"
 files = [
     ".env.example", ".gitignore", ".vercelignore", "README.md",
-    "LOCAL-SETUP.md", "DEPLOYMENT-STAGING.md", "PUBLIQ-VENUE-SPEC.md", "GOOGLE-AND-BOOKING-SETUP.md", "package.json",
+    "package.json",
     "package-lock.json", "components.json", "next.config.ts",
     "postcss.config.mjs", "tsconfig.json", "vercel.json",
 ]
-directories = ["src", "public", "scripts", "reference"]
+directories = ["src", "public", "scripts", "reference", "docs"]
 excluded_parts = {"node_modules", ".git", ".cache", ".next", "__pycache__", ".venv"}
 
 with ZipFile(output, "w", compression=ZIP_DEFLATED, compresslevel=9) as archive:
