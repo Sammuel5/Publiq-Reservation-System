@@ -20,7 +20,7 @@ export function CancelSeatingButton({id, reference, seat, night}: {id:string; re
  return <Dialog open={open} onOpenChange={value=>{if(!busy){setOpen(value);setError("");}}}>
   <DialogTrigger asChild><Button size="sm" variant="outline">Cancel booking</Button></DialogTrigger>
   <DialogContent>
-   <DialogHeader><DialogTitle>Cancel this booking?</DialogTitle><DialogDescription>{reference} · {seat} · {night}. This releases the space for another guest and queues a cancellation email to the guest. This cannot be undone.</DialogDescription></DialogHeader>
+   <DialogHeader><DialogTitle>Cancel this booking?</DialogTitle><DialogDescription>{reference} · {seat} · {night}. This removes it from active bookings, releases the space for that night, and queues a cancellation email to the guest. The cancelled record stays in history. This cannot be undone.</DialogDescription></DialogHeader>
    {error ? <p role="alert" className="text-sm text-danger">{error}</p> : null}
    <DialogFooter><Button type="button" variant="ghost" disabled={busy} onClick={()=>setOpen(false)}>Keep booking</Button><Button type="button" variant="destructive" disabled={busy} onClick={cancel}>{busy ? "Cancelling…" : "Yes, cancel booking"}</Button></DialogFooter>
   </DialogContent>

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import Link from "next/link";
 import { connectToDatabase } from "@/lib/db/mongoose";
 import { formatClubTime12h } from "@/lib/utils/datetime";
 import { requireAdminPermission, can } from "@/lib/auth/guards";
@@ -21,23 +22,29 @@ export default async function ReservationsBoardPage({ searchParams }: { searchPa
   const settings = await getClubSettings();
   await connectToDatabase();
   const websiteCollection = mongoose.connection.db!.collection("publiq_seating_bookings");
-  const websiteTotal = await websiteCollection.countDocuments();
+  const showingCancelled = raw.status === "cancelled";
+  const statusFilter = { status: showingCancelled ? "CANCELLED" : "CONFIRMED" };
+  const websiteTotal = await websiteCollection.countDocuments(statusFilter);
   const websitePages = Math.max(1, Math.ceil(websiteTotal / 25));
   const requestedPage = Number(raw.websitePage ?? 1);
   const websitePage = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? Math.min(requestedPage, websitePages) : 1;
-  const websiteRows = await websiteCollection.find({}, { projection: { reference: 1, seat: 1, night: 1, time: 1, guests: 1, minimumCentavos: 1, status: 1, name: 1, mobile: 1, googleEmail: 1 } }).sort({ createdAt: -1, _id: -1 }).skip((websitePage - 1) * 25).limit(25).toArray();
+  const websiteRows = await websiteCollection.find(statusFilter, { projection: { reference: 1, seat: 1, night: 1, time: 1, guests: 1, minimumCentavos: 1, status: 1, name: 1, mobile: 1, googleEmail: 1 } }).sort({ createdAt: -1, _id: -1 }).skip((websitePage - 1) * 25).limit(25).toArray();
   return <div className="space-y-6">
     <PageHeader title="Reservations" description="Review and manage website seating bookings." />
       <section aria-labelledby="website-bookings" className="space-y-3">
         <div className="flex flex-wrap items-end justify-between gap-2">
           <div>
             <h2 id="website-bookings" className="font-display text-2xl">Website seating bookings</h2>
-            <p className="mt-1 text-sm text-muted">Website seating bookings, newest first.</p>
+            <p className="mt-1 text-sm text-muted">{showingCancelled ? "Cancelled reservations, newest first." : "Active reservations, newest first."}</p>
           </div>
           <Badge variant="neutral">{websiteTotal} total</Badge>
         </div>
+        <nav aria-label="Reservation status" className="flex flex-wrap gap-2">
+          <Link href="/admin/reservations" aria-current={!showingCancelled ? "page" : undefined} className={`inline-flex min-h-11 items-center rounded-md border px-4 text-sm font-medium ${!showingCancelled ? "border-gold/45 bg-gold/10 text-gold" : "border-line text-muted"}`}>Active</Link>
+          <Link href="/admin/reservations?status=cancelled" aria-current={showingCancelled ? "page" : undefined} className={`inline-flex min-h-11 items-center rounded-md border px-4 text-sm font-medium ${showingCancelled ? "border-gold/45 bg-gold/10 text-gold" : "border-line text-muted"}`}>Cancelled history</Link>
+        </nav>
         {websiteRows.length === 0 ? (
-          <Card><CardContent><EmptyState title="No website seating bookings yet" description="Confirmed bookings from the website will appear here." /></CardContent></Card>
+          <Card><CardContent><EmptyState title={showingCancelled ? "No cancelled bookings" : "No active bookings"} description={showingCancelled ? "Cancelled bookings will appear here." : "Confirmed bookings from the website will appear here."} /></CardContent></Card>
         ) : (
           <ul className="grid gap-3 md:grid-cols-2" aria-label="Website seating bookings">
             {websiteRows.map((row) => (
@@ -55,7 +62,7 @@ export default async function ReservationsBoardPage({ searchParams }: { searchPa
           </ul>
         )}
         <Pager page={websitePage} totalPages={websitePages} total={websiteTotal} unit="website booking" buildHref={(page) => `/admin/reservations${buildQuery({ ...raw, websitePage: page })}#website-bookings`} />
-        <p className="text-xs text-muted">Staff can cancel confirmed bookings here. Check-in and payment recording are not yet available.</p>
+        <p className="text-xs text-muted">Cancelling removes a booking from Active, releases the space for that night, and keeps a record in Cancelled history.</p>
       </section>
 
   </div>;

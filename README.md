@@ -26,7 +26,7 @@ PUBLIQ combines a guest-facing seating showcase and reservation flow with a priv
 This project is in local review. Its public booking feature defaults to **off**. Before any real-world use:
 
 - Use a fresh database with no old reservations. The old front-desk API and screens are disabled; the website seating claims are the only active booking inventory. This does not import old reservations or block seats for phone or walk-in bookings.
-- Add and verify website-booking check-in and payment recording. Staff can cancel confirmed website bookings from the reservations page, which releases the relevant seat claims.
+- Add and verify website-booking check-in and payment recording. Staff can cancel confirmed website bookings from the reservations page, which releases the relevant seat claims and moves the record from Active to Cancelled history.
 - Finish testing Staff, Admin and Super Admin permissions, including direct pages and API requests. Two-factor authentication is not enabled.
 - Confirm couch and combined VIP 3+4 capacities before enabling those bookings. The current VIP 5/6 maximum of 10 is an assumption requiring confirmation.
 - Configure and test Gmail and the authenticated scheduler with controlled recipients. See [Gmail setup](docs/GMAIL-SETUP.md). The new seating flow queues guest and staff emails, but live delivery has not been verified; it does not send SMS or offer guest-initiated cancellation.
