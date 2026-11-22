@@ -9,9 +9,11 @@ a staging environment. Keep this file and `LOCAL-SETUP.md` with the project.
 > has been tested with fabricated sign-in sessions in an isolated database, but
 > a real Google sign-in has not been tested. Couch and combined VIP 3 + 4
 > capacities are not yet confirmed; those spaces cannot be booked online.
-> Confirmation email/SMS, customer cancellations, staff changes and integration
-> with the old admin calendar/blocking system are not implemented for the new
-> seating flow. A dependency security audit reported issues that must be reviewed.
+> Confirmation and staff notification emails and staff cancellation emails are
+> queued, but live delivery needs provider and scheduler setup and testing. Guest
+> cancellation, check-in, payment recording and integration with the old admin
+> calendar/blocking system are not implemented; that legacy workflow is disabled.
+> Security issues need review.
 > Keep `CUSTOMER_BOOKINGS_ENABLED="false"` except in an isolated local test.
 > **Do not accept live reservations or deploy this as a live booking service yet.**
 
@@ -236,22 +238,30 @@ Do not upload `.env.local`. **Do not deploy this revision for real bookings.**
 `vercel.json` currently contains five-minute legacy cron schedules that may not
 be supported on the chosen Vercel plan; review `DEPLOYMENT-STAGING.md` first.
 
-The optional `CRON_SECRET`, `RESEND_API_KEY`, `NOTIFICATION_FROM_EMAIL`,
-`NOTIFICATION_STAFF_EMAIL`, `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and
-`TWILIO_FROM_NUMBER` relate to the earlier legacy notification/scheduler paths.
-Setting them does **not** add email/SMS confirmation to the new seating flow.
-Keep provider credentials secret and do not configure them until the new flow
-has been implemented and tested with isolated recipients. Vercel's cron only
-runs automatically for the production deployment; preview needs a safe manual
-or external test as described in `DEPLOYMENT-STAGING.md`.
+### Guest and staff confirmation email
+
+New confirmed website seating bookings now create two email jobs in the same
+transaction: one to the verified Google account email and one to a designated
+staff email address. When staff cancel a website seating booking, the transaction
+releases its physical-seat claims and queues a cancellation email for the guest. Configure Gmail and the authenticated external scheduler as described in
+[Gmail setup](GMAIL-SETUP.md). Use a dedicated Gmail account and an app
+password, not your Google account password. SMS and legacy notification jobs
+are disabled.
+
+Emails are queued, not sent during the booking request. Gmail and the scheduler
+must be configured and tested with controlled recipients. SMTP acceptance is not
+proof of inbox delivery. SMTP has no provider idempotency guarantee: retries can
+occasionally duplicate a message. The System dashboard does not track this new
+outbox. Earlier seating bookings are not automatically backfilled. An already
+in-flight confirmation can race with a cancellation. See `DEPLOYMENT-STAGING.md`.
 
 ## 8. Before opening real reservations
 
 - [ ] Confirm all couch capacities and combined VIP 3 + 4 capacity and pricing.
 - [ ] Complete and test Google login with a real test account.
-- [ ] Implement and test customer cancellations, staff editing, new-booking
-      calendar/block integration, and notification delivery.
-- [ ] Confirm no conflicts with prior reservations and migrate/reconcile data.
+- [ ] Implement and test guest-initiated cancellations, staff editing, new-booking
+      calendar/block integration; verify live notification delivery separately.
+- [ ] Use a fresh database with no prior reservations; legacy records are not migrated. Do not take phone/walk-in bookings outside the website inventory unless staff have a safe manual process.
 - [ ] Test concurrent bookings and retries against isolated staging data.
 - [ ] Test on physical iPhone and Android devices and accessibility tools.
 - [ ] Resolve `npm audit` findings and perform a security/privacy review. The

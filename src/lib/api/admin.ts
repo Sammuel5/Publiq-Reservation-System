@@ -70,6 +70,11 @@ export function adminRoute(options: RouteOptions) {
       }
 
       const session = await requireApiAdmin(options.permission);
+      // Retired front-desk inventory does not share website seat claims. Never
+      // let its APIs create bookings, blocks or misleading availability.
+      if (/^\/api\/admin\/(?:reservations|blocks|rooms|categories|payments|customers)(?:\/|$)/.test(request.nextUrl.pathname)) {
+        return NextResponse.json({ error: { code: "LEGACY_DISABLED", message: "The old front-desk system is disabled. Use website seating reservations instead." } }, { status: 410, headers: { "Cache-Control": "no-store" } });
+      }
       const result = await options.run({
         request,
         session,

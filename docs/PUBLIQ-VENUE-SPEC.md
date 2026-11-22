@@ -31,11 +31,13 @@
 - Couch and combined VIP capacities, couch photo assignments and cocktail-table
   details need owner confirmation; affected spaces remain unavailable online.
 - Combined party-size pricing above 12 requires a confirmed capacity and policy.
-- New seating bookings lack notifications, cancellations, staff edits, legacy
-  block/calendar integration and migration of existing reservations. Staff list
-  is read-only. No real bookings should be accepted until these are completed.
+- New seating booking emails are queued but live delivery is untested. They lack
+  guest-initiated cancellations, check-in and staff edits. The legacy booking
+  workflow is disabled, not integrated. Staff can cancel website bookings and
+  release their seat claims from Reservations. Do not accept real bookings until
+  the remaining launch checks are complete.
 - `npm audit` reported dependency advisories; review and resolve before launch.
 - Do not enable `CUSTOMER_BOOKINGS_ENABLED` outside isolated local testing.
-- Old admin records and views remain; they are not the new booking inventory.
+- Old records are not migrated or counted in the new seating inventory. Use a fresh database.
 
 Existing database settings override defaults and are not silently migrated.

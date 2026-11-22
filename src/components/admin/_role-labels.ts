@@ -9,6 +9,7 @@ export const ROLE_LABELS: Record<AdminRole, string> = ADMIN_ROLE_LABELS;
 const CAPABILITY_LABELS: Partial<Record<keyof typeof PERMISSIONS, string>> = {
   RESERVATION_VIEW: "see bookings",
   RESERVATION_CHECK_IN: "check in guests",
+  SEATING_CANCEL: "cancel website seating bookings",
   RESERVATION_STATUS: "close out / cancel",
   RESERVATION_DECIDE: "approve or decline bookings and cancellation requests",
   RESERVATION_EDIT: "edit and move bookings",

@@ -20,7 +20,7 @@ function configuredChannels(): Channel[] {
     channels.push("email");
     if (process.env.NOTIFICATION_STAFF_EMAIL) channels.push("staff");
   }
-  if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER) channels.push("sms");
+  if (process.env.NOTIFICATIONS_SMS_ENABLED === "true" && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER) channels.push("sms");
   return channels;
 }
 
@@ -47,14 +47,14 @@ async function deliver(job: Job): Promise<void> {
 
 /** Lease one job at a time across instances. Delivery is at-least-once: a crash
  * after provider acceptance and before acknowledgement can duplicate an SMS. */
-export async function processNotifications(maxJobs = 25): Promise<{ sent: number; failed: number; configured: Channel[] }> {
+export async function processNotifications(maxJobs = 25, maxDurationMs = 40_000): Promise<{ sent: number; failed: number; configured: Channel[] }> {
   const db = (await connectToDatabase()).connection.db;
   if (!db) throw new Error("Database unavailable");
   const collection = db.collection("reservations");
   const configured = configuredChannels();
   let sent = 0, failed = 0;
   if (!configured.length) return { sent, failed, configured };
-  const deadline = Date.now() + 40_000;
+  const deadline = Date.now() + maxDurationMs;
   for (let i = 0; i < maxJobs && Date.now() < deadline; i++) {
     const now = new Date();
     const eligible = { channel: { $in: configured }, nextAttemptAt: { $lte: now }, $or: [{ state: "pending" }, { state: "sending", leaseUntil: { $lte: now } }] };

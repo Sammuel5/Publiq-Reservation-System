@@ -27,6 +27,9 @@ try {
  r=await post(body("VIP 3 + 4"));assert.equal(r.status,400);
  r=await post(body("VIP 5",11));assert.equal(r.status,400);
  r=await post(body("VIP 1",6));assert.equal(r.status,201);let j=await r.json();assert.equal(j.booking.minimumCentavos,700000);assert.equal(j.booking.duplicate,false);
+ assert.equal(await db.collection("publiq_email_outbox").countDocuments({reference:j.booking.reference}),2);
+ const cronDenied=await fetch(`${base}/api/cron/notifications`);assert.equal(cronDenied.status,401);
+ const cronAllowed=await fetch(`${base}/api/cron/notifications`,{headers:{Authorization:"Bearer testing-cron-secret-at-least-32-characters-long"}});assert.equal(cronAllowed.status,200);assert.equal((await cronAllowed.json()).seating.configured,false);
  const idempotent=body("VIP 2",9);r=await post(idempotent);assert.equal(r.status,201);j=await r.json();let ref=j.booking.reference;assert.equal(j.booking.minimumCentavos,850000);
  r=await post(idempotent);assert.equal(r.status,200);j=await r.json();assert.equal(j.booking.reference,ref);assert.equal(j.booking.duplicate,true);
  r=await post({...idempotent,guests:10});assert.equal(r.status,409);

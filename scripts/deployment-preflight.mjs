@@ -13,7 +13,7 @@ check(Boolean(env.MONGODB_DB_NAME && /^[A-Za-z0-9_-]+$/.test(env.MONGODB_DB_NAME
 check(Boolean(site && (site.protocol === "https:" || (localTest && site.protocol === "http:")) && !site.username && !site.password && site.pathname === "/" && !site.search && !site.hash), "Public site URL is an HTTPS origin");
 check(env.AUTH_COOKIE_SECURE !== "false", "Secure session cookies are not disabled");
 check(Boolean(env.CRON_SECRET && env.CRON_SECRET.length >= 32 && /^[\x21-\x7e]+$/.test(env.CRON_SECRET)), "Cron secret has at least 32 printable, non-space characters");
-warn(Boolean(env.RESEND_API_KEY && env.NOTIFICATION_FROM_EMAIL && env.NOTIFICATION_STAFF_EMAIL), "Email and staff-notification settings present (not a delivery test)");
+warn(Boolean(env.GMAIL_USER && env.GMAIL_APP_PASSWORD && env.NOTIFICATION_STAFF_EMAIL), "Email and staff-notification settings present (not a delivery test)");
 warn(Boolean(env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_FROM_NUMBER), "SMS settings present (not a delivery test)");
 if (env.MONGODB_URI && env.MONGODB_DB_NAME) {
   try {

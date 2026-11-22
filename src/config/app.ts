@@ -27,6 +27,7 @@ export const PERMISSIONS = {
   RESERVATION_DECIDE: "reservation:decide", // approve / reject
   RESERVATION_EDIT: "reservation:edit",
   RESERVATION_CHECK_IN: "reservation:check-in",
+  SEATING_CANCEL: "seating:cancel",
   RESERVATION_STATUS: "reservation:status", // check-in / complete / no-show / cancel
   ROOM_VIEW: "room:view",
   ROOM_MANAGE: "room:manage",
@@ -46,6 +47,7 @@ const STAFF_PERMISSIONS: Permission[] = [
   PERMISSIONS.DASHBOARD_VIEW,
   PERMISSIONS.RESERVATION_VIEW,
   PERMISSIONS.RESERVATION_CHECK_IN,
+  PERMISSIONS.SEATING_CANCEL,
   PERMISSIONS.PAYMENT_VIEW,
   PERMISSIONS.PAYMENT_RECORD,
 ];

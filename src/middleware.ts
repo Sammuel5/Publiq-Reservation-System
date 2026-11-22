@@ -22,6 +22,11 @@ export function middleware(request: NextRequest) {
 
   const hasSessionCookie = Boolean(request.cookies.get(SESSION_COOKIE_NAME)?.value);
   if (hasSessionCookie) {
+    // Old screens operate on unrelated room inventory; never present them as
+    // authoritative seating availability. The destination still verifies auth.
+    if (/^\/admin\/(?:calendar|rooms|blocks|payments|customers)(?:\/|$)/.test(pathname) || /^\/admin\/reservations\/.+/.test(pathname) || pathname === "/admin/seating-bookings") {
+      return NextResponse.redirect(new URL("/admin/reservations", request.url));
+    }
     return NextResponse.next();
   }
 

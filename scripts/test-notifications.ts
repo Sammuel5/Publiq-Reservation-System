@@ -9,6 +9,7 @@ async function main() {
   process.env.RESEND_API_KEY = "test-key";
   process.env.NOTIFICATION_FROM_EMAIL = "test@example.com";
   process.env.NOTIFICATION_STAFF_EMAIL = "staff@example.com";
+  process.env.NOTIFICATIONS_SMS_ENABLED = "true"; // Explicitly test the legacy optional SMS path.
   process.env.TWILIO_ACCOUNT_SID = "test-sid";
   process.env.TWILIO_AUTH_TOKEN = "test-token";
   process.env.TWILIO_FROM_NUMBER = "+15550000000";

@@ -117,7 +117,7 @@ export async function getSystemStatus(): Promise<SystemStatus> {
   ]);
   const count = (state: string) => counts.find((entry) => entry._id === state)?.count ?? 0;
   const emailConfigured = Boolean(process.env.RESEND_API_KEY && process.env.NOTIFICATION_FROM_EMAIL);
-  const smsConfigured = Boolean(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER);
+  const smsConfigured = Boolean(process.env.NOTIFICATIONS_SMS_ENABLED === "true" && process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM_NUMBER);
   return {
     notifications: { pending: count("pending"), sending: count("sending"), failed: count("failed"), emailConfigured, smsConfigured, staffConfigured: emailConfigured && Boolean(process.env.NOTIFICATION_STAFF_EMAIL) },
     database: {

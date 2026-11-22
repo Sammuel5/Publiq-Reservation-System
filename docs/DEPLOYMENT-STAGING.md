@@ -1,4 +1,4 @@
-> **Status:** This guide includes older reservation-system material. The [documentation index](README.md) and [current project status](../README.md#current-status) take precedence. Do not accept real bookings until the launch blockers are resolved.
+> **Status:** This guide includes older reservation-system material. Seating emails use the authenticated notifications cron and require controlled live testing. Legacy notification jobs are no longer processed; this deployment uses email only. The [documentation index](README.md) and [current project status](../README.md#current-status) take precedence. Do not accept real bookings until the launch blockers are resolved.
 
 # Staging deployment runbook
 
@@ -9,13 +9,12 @@ not paste secrets into chat, tickets, source control or command-line arguments.
 
 ## 1. Decide and provision
 
-- Choose a Vercel team and plan. The checked-in `vercel.json` schedules two jobs
-  every five minutes. Vercel Hobby rejects schedules more frequent than daily;
-  Pro or Enterprise supports this frequency. If using an external scheduler on
-  Hobby, remove the two cron declarations from the deployment configuration
-  before deployment and configure the external scheduler instead; do **not**
-  downgrade the interval to daily and call that equivalent. Check function time
-  limits and cost as well. [Vercel cron limits](https://vercel.com/docs/cron-jobs/usage-and-pricing)
+- This project is prepared for Vercel Hobby: `vercel.json` contains no built-in
+  cron schedules. Configure an external scheduler to call both authenticated
+  cron routes every five minutes. Without it, queued emails will not be sent.
+  Verify your scheduler supports HTTPS GET requests with a secret Authorization
+  header and supports the required frequency; do not put secrets in URLs.
+  Check function time limits and cost. [Vercel cron limits](https://vercel.com/docs/cron-jobs/usage-and-pricing)
 - Create a **separate staging** MongoDB Atlas project/cluster, database and
   database user. Use a replica set/Atlas with transaction support. Grant only
   the application permissions it needs; use a separate privileged operator
@@ -25,10 +24,9 @@ not paste secrets into chat, tickets, source control or command-line arguments.
   allowlist to the internet, **not** anonymous database access; weigh that risk,
   use strong credentials and least privilege, and investigate private or static
   networking appropriate to the plan. [Atlas/Vercel](https://www.mongodb.com/docs/atlas/reference/partner-integrations/vercel/)
-- For delivery testing, provision Resend with a verified sending domain and a
-  Twilio SMS-capable sender with permissions for the destination country. Twilio
-  trial accounts can have verified-recipient and geographic restrictions; check
-  the [Twilio trial documentation](https://www.twilio.com/docs/usage/tutorials/how-to-use-your-free-trial-account).
+- For delivery testing, configure a dedicated Gmail account and app password as
+  described in [Gmail setup](GMAIL-SETUP.md). Live delivery is untested. SMS is
+  disabled by default and is not needed for the requested email-only setup.
   Use consenting test recipients and a staff test inbox. Leave provider values
   unset until ready: messages queue rather than sending. Do not use real guest
   contact details for staging. Provider credentials, test sends and provider
@@ -51,8 +49,7 @@ separate project, not Production. Supply:
 | `CLUB_TIMEZONE` | Club's IANA timezone, e.g. `Asia/Manila`. |
 | `NEXT_PUBLIC_SITE_URL` | The actual HTTPS staging origin; no path, slash suffix beyond `/`, query or credentials. |
 | `CRON_SECRET` | Unique cryptographically random secret, at least 32 printable non-space characters; keep private. |
-| `RESEND_API_KEY`, `NOTIFICATION_FROM_EMAIL`, `NOTIFICATION_STAFF_EMAIL` | Optional until email testing; server-only. |
-| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | Optional until SMS testing; server-only. |
+| `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `NOTIFICATION_STAFF_EMAIL` | Optional until email testing; server-only. |
 
 Generate a secret locally with `openssl rand -hex 32` and store it directly in
 the hosting secret manager. Environment changes generally require a fresh
@@ -75,8 +72,6 @@ From the project root after `npm ci`:
 ```sh
 node --env-file=.env.staging.local node_modules/tsx/dist/cli.mjs scripts/seed-super-admin.ts
 node --env-file=.env.staging.local node_modules/tsx/dist/cli.mjs scripts/sync-indexes.ts
-# Optional on staging only: demo rooms and rates; replace with real venue data.
-node --env-file=.env.staging.local node_modules/tsx/dist/cli.mjs scripts/seed-demo-rooms.ts
 node --env-file=.env.staging.local scripts/deployment-preflight.mjs
 ```
 
@@ -89,7 +84,7 @@ Super Admin and settings. Warnings for missing providers or rooms do not mean
 those items are ready. A topology check does not prove a transaction succeeds.
 
 Log in as the new admin, rotate/remove bootstrap secrets, set real opening hours,
-room inventory, rates, timezone and policies. Demo data is not production data.
+timezone and policies. Do not seed legacy rooms.
 
 ## 4. Create a protected preview
 
@@ -129,7 +124,7 @@ separately with the staging environment and database access.
   expired staging hold moves to `EXPIRED` once and releases its locks. Check
   scheduler logs and that neither a redirect nor deployment protection blocked
   the invocation. [Vercel cron management](https://vercel.com/docs/cron-jobs/manage-cron-jobs)
-- Enable provider credentials only when ready. Send a controlled email and SMS
+- Enable provider credentials only when ready. Send a controlled email
   to opted-in staging recipients; confirm provider acceptance **and receipt**,
   as well as the staff inbox. Verify retries/backlog and inspect the System page.
   Provider acceptance is not a delivery receipt. Do not allow a scheduler to
@@ -147,7 +142,7 @@ separately with the staging environment and database access.
 ## 6. Release gate — do not promote automatically
 
 Record staging URL and deployment ID, successful read-only checks, a verified
-restore, authorized scheduler execution, actual email/SMS receipt, approved
+restore, authorized scheduler execution, actual email receipt, approved
 sender identities, proxy behavior, monitoring/alerts, data-retention decisions,
 rollback procedure and named owners. Review failures and costs. Production needs
 separate database/users/secrets/provider settings and an explicit go-live
