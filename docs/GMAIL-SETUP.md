@@ -66,3 +66,18 @@ are sent per confirmed booking, plus an email when staff cancel. Monitor deliver
 quota, failures and credentials, and consider a transactional provider if volume
 or reliability needs grow. If the Gmail password changes or the app password is
 revoked, create a new app password, update Vercel, and redeploy.
+
+## Troubleshooting a scheduler run
+
+A 200 response means the authorized job ran, not necessarily that messages
+were delivered. In `seating`, `configured: false` means Gmail credentials are
+missing or the sender isn't an @gmail.com address; `failed` counts attempted
+messages that failed. When failures occur, `failureReasons` contains only
+fixed categories: `authentication`, `connection`, `rejected`,
+`temporary_rejection` or `unknown`. It never includes SMTP server text, email
+addresses or passwords. The category is a clue, not a definitive diagnosis.
+Only jobs attempted during that invocation appear in these counts. Failed jobs
+are retried with backoff up to eight attempts; already exhausted jobs do not
+retry automatically. Do not reset or replay jobs blindly: some messages could
+already have been delivered and cancellations can invalidate confirmations.
+Check booking status and delivery history before any recovery action.

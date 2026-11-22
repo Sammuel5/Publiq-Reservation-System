@@ -36,9 +36,23 @@ export function seatingEmailJobs(input: {
 
 type SendEmail = (message: { from: string; to: string; subject: string; text: string; messageId: string }) => Promise<unknown>;
 
+// Only fixed categories are returned. Raw SMTP messages can contain addresses,
+// provider text or credentials and must never be logged or exposed.
+export function classifyMailFailure(error: unknown): string {
+  if (!error || typeof error !== "object") return "unknown";
+  const e = error as { code?: unknown; responseCode?: unknown };
+  const code = typeof e.code === "string" ? e.code : "";
+  const response = typeof e.responseCode === "number" ? e.responseCode : 0;
+  if (code === "EAUTH" || response === 534 || response === 535) return "authentication";
+  if (["ETIMEDOUT", "ESOCKET", "ECONNECTION", "ECONNREFUSED", "ECONNRESET", "EHOSTUNREACH", "ENETUNREACH", "EDNS", "ENOTFOUND", "EAI_AGAIN"].includes(code)) return "connection";
+  if (code === "EENVELOPE" || (response >= 500 && response <= 599)) return "rejected";
+  if (response >= 400 && response <= 499) return "temporary_rejection";
+  return "unknown";
+}
+
 /** Leased and retryable. SMTP has no provider idempotency guarantee: an
  * ambiguous failure after Gmail accepts a message can cause duplicate mail. */
-export async function processSeatingEmails(maxJobs = 10, testSend?: SendEmail): Promise<{sent:number; failed:number; configured:boolean}> {
+export async function processSeatingEmails(maxJobs = 10, testSend?: SendEmail): Promise<{sent:number; failed:number; configured:boolean; failureReasons?: Record<string,number>}> {
   const user=process.env.GMAIL_USER?.trim(), password=process.env.GMAIL_APP_PASSWORD?.replace(/\s/g, "");
   if (!user || !/^[a-zA-Z0-9._%+-]+@gmail\.com$/i.test(user) || !password) return {sent:0, failed:0, configured:false};
   const from=`PUBLIQ <${user}>`;
@@ -48,6 +62,7 @@ export async function processSeatingEmails(maxJobs = 10, testSend?: SendEmail): 
   const outbox=db.collection<SeatingEmail>("publiq_email_outbox");
   const kinds: SeatingEmail["kind"][] = process.env.NOTIFICATION_STAFF_EMAIL ? ["guest", "staff", "cancelled"] : ["guest", "cancelled"];
   let sent=0, failed=0;
+  const failureReasons: Record<string,number> = {};
   const deadline=Date.now()+10_000;
   for (let i=0; i<Math.min(10, Math.max(0,maxJobs)) && Date.now()<deadline; i++) {
     const now=new Date(), leaseToken=randomUUID();
@@ -71,13 +86,13 @@ export async function processSeatingEmails(maxJobs = 10, testSend?: SendEmail): 
         const subject=job.kind === "cancelled" ? "Your PUBLIQ reservation was cancelled" : job.kind === "guest" ? "Your PUBLIQ reservation is confirmed" : "New PUBLIQ seating reservation";
         const messageId=`<${createHash("sha256").update(job._id).digest("hex")}@publiq-mail.local>`;
         await send({from,to,subject,text:lines.join("\n"),messageId});
-      } catch { error="Delivery request failed"; }
+      } catch (cause) { error=classifyMailFailure(cause); }
     }
     const patch: Partial<SeatingEmail> = !valid ? {state:"skipped",lastError:"Booking state changed",leaseToken:null,leaseUntil:null}
       : error ? {state:job.attempts>=8?"failed":"pending",nextAttemptAt:new Date(Date.now()+Math.min(3_600_000,30_000*2**(job.attempts-1))),lastError:error,leaseToken:null,leaseUntil:null}
       : {state:"sent",sentAt:new Date(),lastError:null,leaseToken:null,leaseUntil:null};
     const written=await outbox.updateOne({_id:job._id,state:"sending",leaseToken},{$set:patch});
-    if (written.modifiedCount && valid) {if(error)failed++;else sent++;}
+    if (written.modifiedCount && valid) {if(error){failed++;failureReasons[error]=(failureReasons[error] ?? 0)+1;}else sent++;}
   }
-  return {sent,failed,configured:true};
+  return {sent,failed,configured:true,...(failed ? {failureReasons} : {})};
 }
